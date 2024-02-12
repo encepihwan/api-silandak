@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "upbeat-medley-319008",
+  "private_key_id": "c172a7bbdb41370378d2ca8d6f5a2e9dd7d14293",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDDeSJdeNbRVpjE\ny9IdKPcXOpIlbElq0OBAW7J7Cg+eZWNkihcWgYaOcaBWpG5y9NouA8pWZ0em02sB\n4KqggzEeAPxkmLuMO3H6VUBtNipw5ibFXAf4gePYTTJWvbFAESA53Ds6fNHf8juy\nf8e3k/3bJKv2lUpAFexVulBnqLU/wRZKx5bFvUlaCfHyNE0Yi+V6WNOSfv7lO17S\nv0LbA/EecXzlln5BtDZSXDRuxua7KdgsPMPMkfHKh4o84K3h7YbZ9UYX25Eti1Bs\nRKwN+0GTY4ZdtmWxVEEMMRXWcTY/TieY5Z6DoooCDdSkxl/Q2dTERZvl0l9BvkOv\nQF8/fNl3AgMBAAECggEAON62Q9GTViZGngLap4cylDyDJoYhugT5KWBERg3AS4od\n57NRUkfu2ORwDKUcSS+5hmet54N20i9yU4KEwdxJXvxUcgQJlJv65iUFcICwylX7\nc7H507AelOCow5m+xu/0m0DaroKAIRJ9kcohVeSll6tMqJn4lzqJnsts9yubR+en\noqX3vfcJc4HDsyM32pwjtRAMbVmDmwlyCvWWt4e/YS8yqR2fjkcldVEq/gt4TUcr\nGs2im+35KplasPSWDh/AeumEvsfSm6kAmAbYaAApIwpS/pjIJtadkmVEBS4S4WYo\n2TiQXyn9v4W/ZPmVVehKSr2O/eiw7HHtG6n6IGdNqQKBgQD0Z3NbQrsQ+NTccQY4\nFofcoT6V4UzV1XPFjpiBunBjB1IktQ5lhG0KC+ou+I+p7B6eW0PgGEMAOnbQ25xA\nSk6Cm7zy6Jqsgr+e7lS+Z3qMg80neipXfL6u8A4fLUqx/6F+ICarljIyqn1EL7fC\n010QEiDClzFFnSwwtUm2DtgSvQKBgQDMv119zGnW0Q8tvY8x4+aLytxFmE3mWikx\nlSTdmljXxmVB7KvNOyCJFdH5qDxxOoPv2dm8HaujRB50lEid8cSn6iTxIMWzjBFp\ns29utNkQbKcPIzDhbwTQ3U2xqCRoaNo9uF4mh1Avr+qySCxSUdmfSiixQAaUJJe+\n/Jt8RhfaQwKBgCAVMGxrbxkEQRUK9TEJrB4HQKr2H1r2oTLuzBBDhBtLy7mr1s72\nukWWWNB/qoQ4zbAl9NwG80ylYBF8sp8x4ep9PSl55Uv+Ad+AE7nG5axqZNTo0YQY\niQN32bK4BFUnZHClEc52cfJ6tOTtiqbVjiLc7lX8+OfVgQaH1bxDaJPVAoGAHLIB\nR107xCieqPl1NTfMmvD+eB6FZHBkb5eIiCpWoz8h9+BUn7nWsH/HYucKOZBK53Wv\nx2adJI+qeQpDNyeoOSResxC1xJkv45GLX4enGF8x9rQm6KFnmmI5vlljaOKxG49Y\nWqwCN/y+tufYllz0VBfPpi/j/CU4w0KiBAPK2gMCgYEAzsu+ObYMZTZPw6PwJetQ\n+NlR2YpUNykJdG42/A58s7F2mskgQbMqTctOgZtfPO2It8zw7N9S8eDccfNOGNqQ\nMeZlGs+ob3trmzEXZd79zjblQhreHjRhGM3H27Hl1xyuxreMnL8F9H5qFZT9+Fyp\nXTQ1Ri635LaMz8wPPkVnke8=\n-----END PRIVATE KEY-----\n",
+  "client_email": "silandak@upbeat-medley-319008.iam.gserviceaccount.com",
+  "client_id": "103526163554082697522",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/silandak%40upbeat-medley-319008.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
