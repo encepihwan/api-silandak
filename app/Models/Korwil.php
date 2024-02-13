@@ -3,7 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+// use Illuminate\Database\Eloquent\Model;
+use Jenssegers\Mongodb\Eloquent\Model;
+
 
 class Korwil extends Model
 {
@@ -20,7 +22,7 @@ class Korwil extends Model
         'pagu_after_refocusing',
         'fe',
         'contract',
-        'physique100%',
+        'physique_percen',
         'pho',
         'ba',
         'percentage_after_realized',

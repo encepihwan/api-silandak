@@ -33,7 +33,7 @@ Route::group([
         Route::post('/login', [AuthController::class, 'login']);
     });
     $router->group(['prefix' => 'korwil'], function ($router){
-        Route::get('/', [KorwilController::class, 'index']);
+        Route::post('/', [KorwilController::class, 'store']);
     });
 });
 
