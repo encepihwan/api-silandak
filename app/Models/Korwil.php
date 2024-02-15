@@ -32,6 +32,7 @@ class Korwil extends Model
         'type',
         'area',
         'pic',
+        'month',
         'created_at',
         'updated_at'
     ];

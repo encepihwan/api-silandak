@@ -3,7 +3,9 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ConditionRoadBridgeController;
 use App\Http\Controllers\KorwilController;
+use App\Http\Controllers\RoadActivitiesController;
 
 /*
 |--------------------------------------------------------------------------
@@ -34,6 +36,15 @@ Route::group([
     });
     $router->group(['prefix' => 'korwil'], function ($router){
         Route::post('/', [KorwilController::class, 'store']);
+        Route::post('/import', [KorwilController::class, 'import']);
+    });
+    
+    $router->group(['prefix' => 'condition'], function ($router){
+        Route::post('/import', [ConditionRoadBridgeController::class, 'import']);
+    });
+    
+    $router->group(['prefix' => 'activity'], function ($router){
+        Route::post('/import', [RoadActivitiesController::class, 'import']);
     });
 });
 

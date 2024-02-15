@@ -10,7 +10,9 @@ use App\Http\Helpers\MethodsHelpers;
 use Illuminate\Support\Facades\DB;
 use App\Http\Helpers\Json;
 use Illuminate\Support\Carbon;
-
+use Maatwebsite\Excel\Facades\Excel;
+use App\Imports\ExcelDataImport;
+use Exception;
 
 class KorwilController extends Controller
 {
@@ -30,7 +32,7 @@ class KorwilController extends Controller
 
         // Build the path to the credentials file
         $credentialsPath = base_path('./upbeat-medley-319008-c172a7bbdb41.json');
-        
+
         // Check if the credentials file exists
         if (File::exists($credentialsPath)) {
             $client->setAuthConfig($credentialsPath);
@@ -46,7 +48,7 @@ class KorwilController extends Controller
     {
         $spreadsheetId = '1MEbpNzmrZx9Yk5IIwvNKZKv0aCLbU7aNfj5Sj1LLNf0';
         $range = 'RESUME PER DESEMBER'; // Adjust the range as needed
-        
+
         $response = $this->sa->spreadsheets_values->get($spreadsheetId, $range);
         $values = $response->getValues();
 
@@ -55,7 +57,58 @@ class KorwilController extends Controller
 
     public function index(Request $request)
     {
-        
+    }
+
+    public function import(Request $request)
+    {
+        try {
+
+            // $file = $request->file('file');
+            $path = $request->file('file')->getRealPath();
+            $data = Excel::toArray([], $path)[0];
+
+            if (!empty($data)) {
+
+                $headerSkipped = false;
+
+                foreach ($data as $row) {
+                    if (!$headerSkipped) {
+                        $headerSkipped = true;
+                        continue;
+                    }
+
+                    Korwil::create([
+                        'code' =>  $row[0], // Kolom 'no' di model ExcelData sesuai dengan kolom 'No' di Excel
+                        'package' =>  $row[1],
+                        'package_before_refocusing' =>  $row[2],
+                        'package_after_refocusing' =>  $row[3],
+                        'pagu_after_refocusing' =>  $row[4],
+                        'fe' => $row[5],
+                        'contract' => $row[6],
+                        'physique_percen' => $row[7],
+                        'pho' => $row[8],
+                        'ba' => $row[9],
+                        'percentage_after_realized' => $row[10],
+                        'pagu_realiized' => $row[11],
+                        'number_of_refocusing_package' => $row[12],
+                        'pagu_refocusing' => $row[13],
+                        'area' => $row[14],
+                        'pic' => $row[15],
+                        'type' => $row[16],
+                        'month' => $row[17],
+                        'year' => $row[18],
+                    ]);
+                }
+                $response = "success";
+                return Json::response($response);
+            }
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return Json::exception('Error Model ' . $debug = env('APP_DEBUG', false) == true ? $e : '');
+        } catch (\Illuminate\Database\QueryException $e) {
+            return Json::exception('Error Query ' . $debug = env('APP_DEBUG', false) == true ? $e : '');
+        } catch (\ErrorException $e) {
+            return Json::exception('Error Exception ' . $debug = env('APP_DEBUG', false) == true ? $e : '');
+        }
     }
 
     /**
@@ -90,9 +143,9 @@ class KorwilController extends Controller
             ['slice_start' => 166, 'slice_length' => 13, 'pic' => 'PA ANDI'],
             ['slice_start' => 186, 'slice_length' => 13, 'pic' => 'PA AGUNG'],
         ];
-        try{
+        try {
             foreach ($configurations as $config) {
-                $korwilData = array_slice($data, $config['slice_start'], $config['slice_length']);           
+                $korwilData = array_slice($data, $config['slice_start'], $config['slice_length']);
                 foreach ($korwilData as $row) {
                     if (count($row) >= 15) {
                         $korwil = new Korwil();
@@ -113,20 +166,22 @@ class KorwilController extends Controller
                         $korwil->type = "01";
                         $korwil->area = "";
                         $korwil->pic = $config['pic'];
+                        $korwil->month = Carbon::now()->format('F');
+                        $korwil->year = Carbon::now()->year;
                         $korwil->created_at = Carbon::now();
                         $korwil->save();
                     }
                 }
             }
-            return response()->json($response);
-        }catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            // return response()->json($response);
+            return Json::response($response);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return Json::exception('Error Model ' . $debug = env('APP_DEBUG', false) == true ? $e : '');
         } catch (\Illuminate\Database\QueryException $e) {
             return Json::exception('Error Query ' . $debug = env('APP_DEBUG', false) == true ? $e : '');
         } catch (\ErrorException $e) {
             return Json::exception('Error Exception ' . $debug = env('APP_DEBUG', false) == true ? $e : '');
         }
-
     }
 
     /**
