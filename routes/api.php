@@ -35,11 +35,13 @@ Route::group([
         Route::post('/login', [AuthController::class, 'login']);
     });
     $router->group(['prefix' => 'korwil'], function ($router){
-        Route::post('/', [KorwilController::class, 'store']);
+        Route::post('/', [KorwilController::class, 'index']);
+        Route::post('/create', [KorwilController::class, 'store']);
         Route::post('/import', [KorwilController::class, 'import']);
     });
     
     $router->group(['prefix' => 'condition'], function ($router){
+        Route::post('/', [ConditionRoadBridgeController::class, 'index']);
         Route::post('/import', [ConditionRoadBridgeController::class, 'import']);
     });
     

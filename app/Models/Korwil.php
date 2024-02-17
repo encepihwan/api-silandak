@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 // use Illuminate\Database\Eloquent\Model;
 use Jenssegers\Mongodb\Eloquent\Model;
+use App\Http\Helpers\MethodsHelpers;
 
 
 class Korwil extends Model
@@ -33,7 +34,13 @@ class Korwil extends Model
         'area',
         'pic',
         'month',
+        'year',
         'created_at',
         'updated_at'
     ];
+
+    public function scopeFilterByField($query, $record, $value)
+    {
+        MethodsHelpers::filterByField($query, $record, $value);
+    }
 }

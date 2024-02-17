@@ -19,7 +19,7 @@ class ConditionRoadBridge extends Model
         'unit',
         'year',
         'value',
-        'filed',
+        'field',
         'pic',
         'created_at',
         'updated_at'

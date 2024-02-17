@@ -57,6 +57,51 @@ class KorwilController extends Controller
 
     public function index(Request $request)
     {
+        try{
+            $data = Korwil::filterByField('area', $request->area)
+            ->filterByField('month', $request->month)
+            ->filterByField('area', $request->area)
+            ->get();
+            $totals = [
+                'total_package_before_refocusing' => 0,
+                'total_package_after_refocusing' => 0,
+                'total_pagu_after_refocusing' => 0,
+                'total_fe' => 0,
+                'total_contract' => 0,
+                'total_physique_percen' => 0,
+                'total_pho' => 0,
+                'total_ba' => 0,
+                'total_pagu_realiized' => 0,
+                'total_number_of_refocusing_package' => 0,
+                'total_pagu_refocusing' => 0,
+            ];
+    
+            foreach ($data as $record) {
+                $totals['total_package_before_refocusing'] += $record->package_before_refocusing;
+                $totals['total_package_after_refocusing'] += $record->package_after_refocusing;
+                $totals['total_pagu_after_refocusing'] += $record->pagu_after_refocusing;
+                $totals['total_fe'] += $record->fe;
+                $totals['total_contract'] += $record->contract;
+                $totals['total_physique_percen'] += $record->physique_percen;
+                $totals['total_pho'] += $record->pho;
+                $totals['total_ba'] += $record->ba;
+                $totals['total_pagu_realiized'] += $record->pagu_realiized;
+                $totals['total_number_of_refocusing_package'] += $record->number_of_refocusing_package;
+                $totals['total_pagu_refocusing'] += $record->pagu_refocusing;
+            }
+    
+            return response()->json([
+                'totals' => $totals,
+                'data' => $data,
+            ]);
+            return Json::response($data);
+        }catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return Json::exception('Error Model ' . $debug = env('APP_DEBUG', false) == true ? $e : '');
+        } catch (\Illuminate\Database\QueryException $e) {
+            return Json::exception('Error Query ' . $debug = env('APP_DEBUG', false) == true ? $e : '');
+        } catch (\ErrorException $e) {
+            return Json::exception('Error Exception ' . $debug = env('APP_DEBUG', false) == true ? $e : '');
+        }
     }
 
     public function import(Request $request)
@@ -76,28 +121,60 @@ class KorwilController extends Controller
                         $headerSkipped = true;
                         continue;
                     }
+                    // dd( $row[1]);
+                    $existingRecord = Korwil::where('package', $row[1])
+                        ->where('type', $row[16])
+                        ->where('month', $row[17])
+                        ->where('year', $row[18])
+                        ->first();
 
-                    Korwil::create([
-                        'code' =>  $row[0], // Kolom 'no' di model ExcelData sesuai dengan kolom 'No' di Excel
-                        'package' =>  $row[1],
-                        'package_before_refocusing' =>  $row[2],
-                        'package_after_refocusing' =>  $row[3],
-                        'pagu_after_refocusing' =>  $row[4],
-                        'fe' => $row[5],
-                        'contract' => $row[6],
-                        'physique_percen' => $row[7],
-                        'pho' => $row[8],
-                        'ba' => $row[9],
-                        'percentage_after_realized' => $row[10],
-                        'pagu_realiized' => $row[11],
-                        'number_of_refocusing_package' => $row[12],
-                        'pagu_refocusing' => $row[13],
-                        'area' => $row[14],
-                        'pic' => $row[15],
-                        'type' => $row[16],
-                        'month' => $row[17],
-                        'year' => $row[18],
-                    ]);
+                        // dd($existingRecord);
+
+                    if ($existingRecord) { // Periksa jika $existingRecord tidak null atau tidak false
+                        $existingRecord->update([
+                            'code' =>  $row[0], // Kolom 'no' di model ExcelData sesuai dengan kolom 'No' di Excel
+                            'package' =>  $row[1],
+                            'package_before_refocusing' =>  $row[2],
+                            'package_after_refocusing' =>  $row[3],
+                            'pagu_after_refocusing' =>  $row[4],
+                            'fe' => $row[5],
+                            'contract' => $row[6],
+                            'physique_percen' => $row[7],
+                            'pho' => $row[8],
+                            'ba' => $row[9],
+                            'percentage_after_realized' => $row[10],
+                            'pagu_realiized' => $row[11],
+                            'number_of_refocusing_package' => $row[12],
+                            'pagu_refocusing' => $row[13],
+                            'area' => $row[14],
+                            'pic' => $row[15],
+                            'type' => $row[16],
+                            'month' => $row[17],
+                            'year' => $row[18],
+                        ]);
+                    } else {
+                        Korwil::create([
+                            'code' =>  $row[0], // Kolom 'no' di model ExcelData sesuai dengan kolom 'No' di Excel
+                            'package' =>  $row[1],
+                            'package_before_refocusing' =>  $row[2],
+                            'package_after_refocusing' =>  $row[3],
+                            'pagu_after_refocusing' =>  $row[4],
+                            'fe' => $row[5],
+                            'contract' => $row[6],
+                            'physique_percen' => $row[7],
+                            'pho' => $row[8],
+                            'ba' => $row[9],
+                            'percentage_after_realized' => $row[10],
+                            'pagu_realiized' => $row[11],
+                            'number_of_refocusing_package' => $row[12],
+                            'pagu_refocusing' => $row[13],
+                            'area' => $row[14],
+                            'pic' => $row[15],
+                            'type' => $row[16],
+                            'month' => $row[17],
+                            'year' => $row[18],
+                        ]);
+                    }
                 }
                 $response = "success";
                 return Json::response($response);
