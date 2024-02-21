@@ -5,7 +5,11 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Http\Helpers\Json;
 use App\Models\RoadActivities;
+use App\Models\Korwil;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Http\Helpers\MethodsHelpers;
+use Jenssegers\Mongodb\Query\Builder as MongoBuilder;
+use Carbon\Carbon;
 
 class RoadActivitiesController extends Controller
 {
@@ -14,10 +18,54 @@ class RoadActivitiesController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        try{
-            $data = RoadActivities::get();
+        try {
+            // $data = $roadActivity = RoadActivities::filterByField('year', $request->year)->get();
+
+            // foreach ($roadActivity as $item) {
+            //     $item->count_pagu = ($item->auction_pagu ?? 0) + ($item->pl_pagu ?? 0);
+            //     $item->count_activity = ($item->auction_activity ?? 0) + ($item->pl_activity ?? 0);
+            // }
+            $year = $request->year;
+            $data = RoadActivities::raw(function ($collection) use ($year) {
+                return $collection->aggregate([
+                    [
+                        '$match' => [
+                            'year' => (int)$year,
+                        ]
+                    ],
+                    [
+                        '$group' => [
+                            '_id' => [
+                                'subactivity' => '$subactivity',
+                                'year' => '$year',
+                                'auction_pagu' => '$auction_pagu',
+                                'auction_activity' => '$auction_activity',
+                                'pl_pagu' => '$pl_pagu',
+                                'pl_activity' => '$pl_activity',
+
+                            ],
+                            'count_pagu' => ['$sum' => ['$add' => ['$auction_pagu', '$pl_pagu']]],
+                            'count_activity' => ['$sum' => ['$add' => ['$auction_activity', '$pl_activity']]],
+                        ],
+                    ],
+                    [
+                        '$project' => [
+                            '_id' => 0,
+                            'subactivity' => '$_id.subactivity',
+                            'year' => '$_id.year',
+                            'auction_pagu' => '$_id.auction_pagu',
+                            'auction_activity' => '$_id.auction_activity',
+                            'pl_pagu' => '$_id.pl_pagu',
+                            'pl_activity' => '$_id.pl_activity',
+                            'count_pagu' => '$count_pagu',
+                            'count_activity' => '$count_activity',
+                        ],
+                    ],
+                ]);
+            });
+
             return Json::response($data);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return Json::exception('Error Model ' . $debug = env('APP_DEBUG', false) == true ? $e : '');
@@ -25,7 +73,6 @@ class RoadActivitiesController extends Controller
             return Json::exception('Error Query ' . $debug = env('APP_DEBUG', false) == true ? $e : '');
         } catch (\ErrorException $e) {
             return Json::exception('Error Exception ' . $debug = env('APP_DEBUG', false) == true ? $e : '');
-        }
         }
     }
 

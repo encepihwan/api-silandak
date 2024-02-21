@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Http\Helpers\MethodsHelpers;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 // use Illuminate\Database\Eloquent\Model;
 use Jenssegers\Mongodb\Eloquent\Model;
@@ -23,4 +24,9 @@ class RoadActivities extends Model
         'created_at',
         'updated_at'
     ];
+
+    public function scopeFilterByField($query, $record, $value)
+    {
+        MethodsHelpers::filterByField($query, $record, $value);
+    }
 }

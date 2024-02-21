@@ -36,6 +36,7 @@ Route::group([
     });
     $router->group(['prefix' => 'korwil'], function ($router){
         Route::post('/', [KorwilController::class, 'index']);
+        Route::get('/resume', [KorwilController::class, 'resume']);
         Route::post('/create', [KorwilController::class, 'store']);
         Route::post('/import', [KorwilController::class, 'import']);
     });
@@ -46,6 +47,7 @@ Route::group([
     });
     
     $router->group(['prefix' => 'activity'], function ($router){
+        Route::post('/', [RoadActivitiesController::class, 'index']);
         Route::post('/import', [RoadActivitiesController::class, 'import']);
     });
 });

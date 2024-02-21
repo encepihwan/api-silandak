@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Google\Service\Sheets;
 use App\Models\Korwil;
+use App\Models\RoadActivities;
 use Illuminate\Support\Facades\File;
 use App\Http\Helpers\MethodsHelpers;
 use Illuminate\Support\Facades\DB;
@@ -57,45 +58,137 @@ class KorwilController extends Controller
 
     public function index(Request $request)
     {
-        try{
-            $data = Korwil::filterByField('area', $request->area)
-            ->filterByField('month', $request->month)
-            ->filterByField('area', $request->area)
-            ->get();
-            $totals = [
-                'total_package_before_refocusing' => 0,
-                'total_package_after_refocusing' => 0,
-                'total_pagu_after_refocusing' => 0,
-                'total_fe' => 0,
-                'total_contract' => 0,
-                'total_physique_percen' => 0,
-                'total_pho' => 0,
-                'total_ba' => 0,
-                'total_pagu_realiized' => 0,
-                'total_number_of_refocusing_package' => 0,
-                'total_pagu_refocusing' => 0,
-            ];
-    
-            foreach ($data as $record) {
-                $totals['total_package_before_refocusing'] += $record->package_before_refocusing;
-                $totals['total_package_after_refocusing'] += $record->package_after_refocusing;
-                $totals['total_pagu_after_refocusing'] += $record->pagu_after_refocusing;
-                $totals['total_fe'] += $record->fe;
-                $totals['total_contract'] += $record->contract;
-                $totals['total_physique_percen'] += $record->physique_percen;
-                $totals['total_pho'] += $record->pho;
-                $totals['total_ba'] += $record->ba;
-                $totals['total_pagu_realiized'] += $record->pagu_realiized;
-                $totals['total_number_of_refocusing_package'] += $record->number_of_refocusing_package;
-                $totals['total_pagu_refocusing'] += $record->pagu_refocusing;
+        try {
+            if (strtolower($request->filter) == "total") {
+                $korwil = $this->resume($request);
+
+                // $roadActivity = RoadActivities::filterByField('year', $request->year)->get();
+                $roadActivity = RoadActivities::filterByField('year', (int)$request->year)->get();
+
+                foreach ($roadActivity as $item) {
+                    $item->count_pagu = ($item->auction_pagu ?? 0) + ($item->pl_pagu ?? 0);
+                    $item->count_activity = ($item->auction_activity ?? 0) + ($item->pl_activity ?? 0);
+                }
+
+                $mergedData = [
+                    'road_activities' => $roadActivity,
+                    'korwil' => $korwil,
+                ];
+                return Json::response($mergedData);
+
+            } else {
+                $data = Korwil::filterByField('area', $request->area)
+                    ->filterByField('month', $request->month)
+                    ->filterByField('area', $request->area)
+                    ->get();
+                $totals = [
+                    'total_package_before_refocusing' => 0,
+                    'total_package_after_refocusing' => 0,
+                    'total_pagu_after_refocusing' => 0,
+                    'total_fe' => 0,
+                    'total_contract' => 0,
+                    'total_physique_percen' => 0,
+                    'total_pho' => 0,
+                    'total_ba' => 0,
+                    'total_pagu_realiized' => 0,
+                    'total_number_of_refocusing_package' => 0,
+                    'total_pagu_refocusing' => 0,
+                ];
+
+                foreach ($data as $record) {
+                    $totals['total_package_before_refocusing'] += $record->package_before_refocusing;
+                    $totals['total_package_after_refocusing'] += $record->package_after_refocusing;
+                    $totals['total_pagu_after_refocusing'] += $record->pagu_after_refocusing;
+                    $totals['total_fe'] += $record->fe;
+                    $totals['total_contract'] += $record->contract;
+                    $totals['total_physique_percen'] += $record->physique_percen;
+                    $totals['total_pho'] += $record->pho;
+                    $totals['total_ba'] += $record->ba;
+                    $totals['total_pagu_realiized'] += $record->pagu_realiized;
+                    $totals['total_number_of_refocusing_package'] += $record->number_of_refocusing_package;
+                    $totals['total_pagu_refocusing'] += $record->pagu_refocusing;
+                }
+
+                $merge = [
+                    'totals' => $totals,
+                    'data' => $data,
+                ];
+
+                return Json::response($merge);
             }
-    
-            return response()->json([
-                'totals' => $totals,
-                'data' => $data,
-            ]);
-            return Json::response($data);
-        }catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return Json::exception('Error Model ' . $debug = env('APP_DEBUG', false) == true ? $e : '');
+        } catch (\Illuminate\Database\QueryException $e) {
+            return Json::exception('Error Query ' . $debug = env('APP_DEBUG', false) == true ? $e : '');
+        } catch (\ErrorException $e) {
+            return Json::exception('Error Exception ' . $debug = env('APP_DEBUG', false) == true ? $e : '');
+        }
+    }
+
+    public function resume(Request $request)
+    {
+        try {
+            $year = $request->year;
+            $data = Korwil::raw(function ($collection) use ($year) {
+                return $collection->aggregate([
+                    [
+                        '$match' => [
+                            'year' => (int)$year
+                        ]
+                    ],
+                    [
+                        '$group' => [
+                            '_id' => [
+                                'code' => '$code',
+                                'package' => '$package',
+                                'type' => '$type',
+                                'area' => '$area',
+                                'pic' => '$pic',
+                                'month' => '$month',
+                                'year' => '$year'
+                            ],
+                            'package_before_refocusing' => ['$sum' => '$package_before_refocusing'],
+                            'package_after_refocusing' => ['$sum' => '$package_after_refocusing'],
+                            'pagu_after_refocusing' => ['$sum' => '$pagu_after_refocusing'],
+                            'fe' => ['$sum' => '$fe'],
+                            'contract' => ['$sum' => '$contract'],
+                            'physique_percen' => ['$sum' => '$physique_percen'],
+                            'pho' => ['$sum' => '$pho'],
+                            'ba' => ['$sum' => '$ba'],
+                            'percentage_after_realized' => ['$sum' => '$percentage_after_realized'],
+                            'pagu_realiized' => ['$sum' => '$pagu_realiized'],
+                            'number_of_refocusing_package' => ['$sum' => '$number_of_refocusing_package'],
+                            'pagu_refocusing' => ['$sum' => '$pagu_refocusing'],
+                        ],
+                    ],
+                    [
+                        '$project' => [
+                            '_id' => 0,
+                            'code' => '$_id.code',
+                            'package' => '$_id.package',
+                            'package_before_refocusing' => '$package_before_refocusing',
+                            'package_after_refocusing' => '$package_after_refocusing',
+                            'pagu_after_refocusing' => '$pagu_after_refocusing',
+                            'fe' => '$fe',
+                            'contract' => '$contract',
+                            'pho' => '$pho',
+                            'ba' => '$ba',
+                            'percentage_after_realized' => '$percentage_after_realized',
+                            'pagu_realiized' => '$pagu_realiized',
+                            'number_of_refocusing_package' => '$number_of_refocusing_package',
+                            'pagu_refocusing' => '$pagu_refocusing',
+                            'type' => '$_id.type',
+                            'area' => '$_id.area',
+                            'pic' => '$_id.pic',
+                            'month' => '$_id.month',
+                            'year' => '$_id.year',
+                        ],
+                    ],
+                ]);
+            });
+
+            return $data;
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return Json::exception('Error Model ' . $debug = env('APP_DEBUG', false) == true ? $e : '');
         } catch (\Illuminate\Database\QueryException $e) {
             return Json::exception('Error Query ' . $debug = env('APP_DEBUG', false) == true ? $e : '');
@@ -128,7 +221,7 @@ class KorwilController extends Controller
                         ->where('year', $row[18])
                         ->first();
 
-                        // dd($existingRecord);
+                    // dd($existingRecord);
 
                     if ($existingRecord) { // Periksa jika $existingRecord tidak null atau tidak false
                         $existingRecord->update([
