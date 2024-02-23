@@ -66,16 +66,14 @@ class KorwilController extends Controller
                 $roadActivity = RoadActivities::filterByField('year', (int)$request->year)->get();
 
                 foreach ($roadActivity as $item) {
-                    $item->count_pagu = ($item->auction_pagu ?? 0) + ($item->pl_pagu ?? 0);
-                    $item->count_activity = ($item->auction_activity ?? 0) + ($item->pl_activity ?? 0);
+                    foreach ($korwil as $row) {
+                        $item->count_pagu = ($item->auction_pagu ?? 0) + ($item->pl_pagu ?? 0);
+                        $item->count_activity = ($item->auction_activity ?? 0) + ($item->pl_activity ?? 0);
+                        $item->korwil = $row;
+                    }
                 }
 
-                $mergedData = [
-                    'road_activities' => $roadActivity,
-                    'korwil' => $korwil,
-                ];
-                return Json::response($mergedData);
-
+                return Json::response($roadActivity);
             } else {
                 $data = Korwil::filterByField('area', $request->area)
                     ->filterByField('month', $request->month)
@@ -125,26 +123,103 @@ class KorwilController extends Controller
         }
     }
 
+    public function stackchart(Request $request)
+    {
+        try {
+            $filter = '';
+
+            if (strtolower($request->filter) == 'fisik') {
+                $filter = 'percentage_after_realized';
+            } else {
+                $filter = 'pagu_realiized';
+            }
+
+            $data = Korwil::where('month', '=', $request->month)
+                ->select('area', $filter)
+                ->get()
+                ->groupBy('area')
+                ->map(function ($group)  use ($filter) {
+                    return [
+                        'area' => $group->first()->area,
+                        'data' => $group->pluck($filter)->toArray()
+                    ];
+                })->values()
+                ->toArray();
+
+            return Json::response($data);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return Json::exception('Error Model ' . $debug = env('APP_DEBUG', false) == true ? $e : '');
+        } catch (\Illuminate\Database\QueryException $e) {
+            return Json::exception('Error Query ' . $debug = env('APP_DEBUG', false) == true ? $e : '');
+        } catch (\ErrorException $e) {
+            return Json::exception('Error Exception ' . $debug = env('APP_DEBUG', false) == true ? $e : '');
+        }
+    }
+
+    public function piechart(Request $request)
+    {
+        try {
+            $filter = '';
+
+            if (strtolower($request->filter) == 'fisik') {
+                $filter = 'percentage_after_realized';
+            } else {
+                $filter = 'pagu_realiized';
+            }
+
+            $data = $this->resume($request);
+            $result = [];
+
+            // Check if the filter is 'fisik' and project only 'percentage_after_realized'
+            if (strtolower($request->filter) == 'fisik') {
+                $result = $data->pluck($filter)->toArray();
+            } else {
+                $result = $data->pluck($filter)->toArray();
+            }
+            return Json::response($result);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return Json::exception('Error Model ' . $debug = env('APP_DEBUG', false) == true ? $e : '');
+        } catch (\Illuminate\Database\QueryException $e) {
+            return Json::exception('Error Query ' . $debug = env('APP_DEBUG', false) == true ? $e : '');
+        } catch (\ErrorException $e) {
+            return Json::exception('Error Exception ' . $debug = env('APP_DEBUG', false) == true ? $e : '');
+        }
+    }
+
     public function resume(Request $request)
     {
         try {
             $year = $request->year;
-            $data = Korwil::raw(function ($collection) use ($year) {
-                return $collection->aggregate([
-                    [
-                        '$match' => [
-                            'year' => (int)$year
-                        ]
-                    ],
+            $month = $request->month;
+
+
+            $data = Korwil::raw(function ($collection) use ($year, $month) {
+
+                $matchCondition = [];
+
+                // Jika tahun kosong, tambahkan filter untuk bulan
+                if (empty($year) && !empty($month)) {
+                    $matchCondition['month'] = $month;
+                }
+
+                // Jika bulan kosong, tambahkan filter untuk tahun
+                if (empty($month) && !empty($year)) {
+                    $matchCondition['year'] = (int)$year;
+                }
+
+                // Jika keduanya tidak kosong, tambahkan filter untuk tahun dan bulan
+                if (!empty($year) && !empty($month)) {
+                    $matchCondition['year'] = (int)$year;
+                    $matchCondition['month'] = $month;
+                }
+
+                $pipeline = [
+                    ['$match' => $matchCondition],
                     [
                         '$group' => [
                             '_id' => [
                                 'code' => '$code',
                                 'package' => '$package',
-                                'type' => '$type',
-                                'area' => '$area',
-                                'pic' => '$pic',
-                                'month' => '$month',
                                 'year' => '$year'
                             ],
                             'package_before_refocusing' => ['$sum' => '$package_before_refocusing'],
@@ -177,14 +252,12 @@ class KorwilController extends Controller
                             'pagu_realiized' => '$pagu_realiized',
                             'number_of_refocusing_package' => '$number_of_refocusing_package',
                             'pagu_refocusing' => '$pagu_refocusing',
-                            'type' => '$_id.type',
-                            'area' => '$_id.area',
-                            'pic' => '$_id.pic',
-                            'month' => '$_id.month',
                             'year' => '$_id.year',
                         ],
                     ],
-                ]);
+                ];
+
+                return $collection->aggregate($pipeline);
             });
 
             return $data;

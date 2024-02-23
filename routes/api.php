@@ -39,6 +39,8 @@ Route::group([
         Route::get('/resume', [KorwilController::class, 'resume']);
         Route::post('/create', [KorwilController::class, 'store']);
         Route::post('/import', [KorwilController::class, 'import']);
+        Route::post('/stack-chart', [KorwilController::class, 'stackchart']);
+        Route::post('/pie-chart', [KorwilController::class, 'piechart']);
     });
     
     $router->group(['prefix' => 'condition'], function ($router){
