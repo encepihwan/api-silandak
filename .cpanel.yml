@@ -1,0 +1,5 @@
+---
+deployment:
+ tasks:
+ - export DEPLOYPATH=/home/simbgpup/api-silandak.sibedaspbgbdgkab.my.id
+ - /usr/bin/rsync -Paz * $DEPLOYPATH --delete
