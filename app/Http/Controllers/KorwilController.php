@@ -12,8 +12,8 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Helpers\Json;
 use Illuminate\Support\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
-use App\Imports\ExcelDataImport;
 use Exception;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class KorwilController extends Controller
 {
@@ -135,18 +135,29 @@ class KorwilController extends Controller
             }
 
             $data = Korwil::where('month', '=', $request->month)
-                ->select('area', $filter)
+                ->select('package', $filter)
                 ->get()
-                ->groupBy('area')
+                ->groupBy('package')
                 ->map(function ($group)  use ($filter) {
                     return [
-                        'area' => $group->first()->area,
+                        'package' => $group->first()->package,
                         'data' => $group->pluck($filter)->toArray()
                     ];
                 })->values()
                 ->toArray();
 
-            return Json::response($data);
+            $area = Korwil::where('month', '=', $request->month)
+                ->pluck('area')
+                ->unique()
+                ->values()
+                ->toArray();
+
+            $response = [
+                'series' => $data,
+                'area' => $area
+            ];
+
+            return Json::response($response);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return Json::exception('Error Model ' . $debug = env('APP_DEBUG', false) == true ? $e : '');
         } catch (\Illuminate\Database\QueryException $e) {
@@ -159,24 +170,22 @@ class KorwilController extends Controller
     public function piechart(Request $request)
     {
         try {
-            $filter = '';
-
-            if (strtolower($request->filter) == 'fisik') {
-                $filter = 'percentage_after_realized';
-            } else {
-                $filter = 'pagu_realiized';
-            }
+            $filter = strtolower($request->filter) == 'fisik' ? 'percentage_after_realized' : 'pagu_realiized';
 
             $data = $this->resume($request);
-            $result = [];
 
-            // Check if the filter is 'fisik' and project only 'percentage_after_realized'
-            if (strtolower($request->filter) == 'fisik') {
-                $result = $data->pluck($filter)->toArray();
-            } else {
-                $result = $data->pluck($filter)->toArray();
-            }
-            return Json::response($result);
+            $filteredData = $data->filter(function($item) use ($filter) {
+                return $item->$filter != 0;
+            });
+
+            // dd($data);
+            $merge = [
+                'series' => $filteredData->pluck($filter)->toArray(),
+                'package' => $filteredData->pluck('package')->toArray()
+            ];
+
+
+            return Json::response($merge);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return Json::exception('Error Model ' . $debug = env('APP_DEBUG', false) == true ? $e : '');
         } catch (\Illuminate\Database\QueryException $e) {
@@ -276,7 +285,17 @@ class KorwilController extends Controller
 
             // $file = $request->file('file');
             $path = $request->file('file')->getRealPath();
-            $data = Excel::toArray([], $path)[0];
+            $reader = IOFactory::createReader('Xlsx');
+
+            // Memuat file Excel
+            $spreadsheet = $reader->load($path);
+
+            // Mendapatkan data dari lembar pertama (indeks 0)
+            $data = $spreadsheet->getActiveSheet()->toArray();
+
+            // Mengonversi array menjadi format JSON
+            // dd($path);
+            // $data = Excel::toArray([], $path)[0];
 
             if (!empty($data)) {
 
@@ -287,58 +306,81 @@ class KorwilController extends Controller
                         $headerSkipped = true;
                         continue;
                     }
+
+                    $month = strval($row[17]);
+                    $type = strval($row[16]);
+                    $pic = strval($row[15]);
+                    $area = strval($row[14]);
+                    $code = strval($row[0]);
+                    $package = strval($row[1]);
+
+                    // Mengonversi kolom-kolom lainnya menjadi integer
+                    $package_before_refocusing = intval($row[2]);
+                    $package_after_refocusing = intval($row[3]);
+                    $pagu_after_refocusing = intval($row[4]);
+                    $fe = intval($row[5]);
+                    $contract = intval($row[6]);
+                    $physique_percen = intval($row[7]);
+                    $pho = intval($row[8]);
+                    $ba = intval($row[9]);
+                    $percentage_after_realized = intval($row[10]);
+                    $pagu_realiized = intval($row[11]);
+                    $number_of_refocusing_package = intval($row[12]);
+                    $pagu_refocusing = intval($row[13]);
+                    $year = intval($row[18]);
+
                     // dd( $row[1]);
-                    $existingRecord = Korwil::where('package', $row[1])
-                        ->where('type', $row[16])
-                        ->where('month', $row[17])
-                        ->where('year', $row[18])
+                    $existingRecord = Korwil::where('package', $package)
+                        ->where('type', $type)
+                        ->where('month', $month)
+                        ->where('year', $year)
                         ->first();
 
                     // dd($existingRecord);
 
-                    if ($existingRecord) { // Periksa jika $existingRecord tidak null atau tidak false
+                    if ($existingRecord) {
                         $existingRecord->update([
-                            'code' =>  $row[0], // Kolom 'no' di model ExcelData sesuai dengan kolom 'No' di Excel
-                            'package' =>  $row[1],
-                            'package_before_refocusing' =>  $row[2],
-                            'package_after_refocusing' =>  $row[3],
-                            'pagu_after_refocusing' =>  $row[4],
-                            'fe' => $row[5],
-                            'contract' => $row[6],
-                            'physique_percen' => $row[7],
-                            'pho' => $row[8],
-                            'ba' => $row[9],
-                            'percentage_after_realized' => $row[10],
-                            'pagu_realiized' => $row[11],
-                            'number_of_refocusing_package' => $row[12],
-                            'pagu_refocusing' => $row[13],
-                            'area' => $row[14],
-                            'pic' => $row[15],
-                            'type' => $row[16],
-                            'month' => $row[17],
-                            'year' => $row[18],
+                            'code' =>  $code,
+                            'package' =>  $package,
+                            'package_before_refocusing' =>  $package_before_refocusing,
+                            'package_after_refocusing' =>  $package_after_refocusing,
+                            'pagu_after_refocusing' =>  $pagu_after_refocusing,
+                            'fe' => $fe,
+                            'contract' => $contract,
+                            'physique_percen' => $physique_percen,
+                            'pho' => $pho,
+                            'ba' => $ba,
+                            'percentage_after_realized' => $percentage_after_realized,
+                            'pagu_realiized' => $pagu_realiized,
+                            'number_of_refocusing_package' => $number_of_refocusing_package,
+                            'pagu_refocusing' => $pagu_refocusing,
+                            'area' => $area,
+                            'pic' => $pic,
+                            'type' => $type,
+                            'month' => $month,
+                            'year' => $year,
                         ]);
                     } else {
                         Korwil::create([
-                            'code' =>  $row[0], // Kolom 'no' di model ExcelData sesuai dengan kolom 'No' di Excel
-                            'package' =>  $row[1],
-                            'package_before_refocusing' =>  $row[2],
-                            'package_after_refocusing' =>  $row[3],
-                            'pagu_after_refocusing' =>  $row[4],
-                            'fe' => $row[5],
-                            'contract' => $row[6],
-                            'physique_percen' => $row[7],
-                            'pho' => $row[8],
-                            'ba' => $row[9],
-                            'percentage_after_realized' => $row[10],
-                            'pagu_realiized' => $row[11],
-                            'number_of_refocusing_package' => $row[12],
-                            'pagu_refocusing' => $row[13],
-                            'area' => $row[14],
-                            'pic' => $row[15],
-                            'type' => $row[16],
-                            'month' => $row[17],
-                            'year' => $row[18],
+                            'code' =>  $code,
+                            'package' =>  $package,
+                            'package_before_refocusing' =>  $package_before_refocusing,
+                            'package_after_refocusing' =>  $package_after_refocusing,
+                            'pagu_after_refocusing' =>  $pagu_after_refocusing,
+                            'fe' => $fe,
+                            'contract' => $contract,
+                            'physique_percen' => $physique_percen,
+                            'pho' => $pho,
+                            'ba' => $ba,
+                            'percentage_after_realized' => $percentage_after_realized,
+                            'pagu_realiized' => $pagu_realiized,
+                            'number_of_refocusing_package' => $number_of_refocusing_package,
+                            'pagu_refocusing' => $pagu_refocusing,
+                            'area' => $area,
+                            'pic' => $pic,
+                            'type' => $type,
+                            'month' => $month,
+                            'year' => $year,
                         ]);
                     }
                 }
