@@ -7,6 +7,7 @@ use App\Http\Helpers\Json;
 use App\Models\ConditionRoadBridge;
 use Illuminate\Support\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class ConditionRoadBridgeController extends Controller
 {
@@ -113,7 +114,12 @@ class ConditionRoadBridgeController extends Controller
 
             // $file = $request->file('file');
             $path = $request->file('file')->getRealPath();
-            $data = Excel::toArray([], $path)[0];
+            $reader = IOFactory::createReader('Xlsx');
+            // $data = Excel::toArray([], $path)[0];
+            $spreadsheet = $reader->load($path);
+
+            // Mendapatkan data dari lembar pertama (indeks 0)
+            $data = $spreadsheet->getActiveSheet()->toArray();
 
             if (!empty($data)) {
 
@@ -125,25 +131,33 @@ class ConditionRoadBridgeController extends Controller
                         continue;
                     }
 
-                    $existingRecord = ConditionRoadBridge::where('condition', $row[1])->where('year', $row[4])->first();
+                    $condition = strval($row[1]);
+                    $type = strval($row[2]);
+                    $unit = strval($row[3]);
+                    $year = intval($row[4]);
+                    $value = intval($row[5]);
+                    $field = strval($row[6]);
+                    $pic = strval($row[7]);
+
+                    $existingRecord = ConditionRoadBridge::where('condition', $condition)->where('year', $year)->first();
 
                     if ($existingRecord) {
                         $existingRecord->update([
-                            'type' =>  $row[2],
-                            'unit' =>  $row[3],
-                            'value' => $row[5],
-                            'field' => $row[6],
-                            'pic' => $row[7],
+                            'type' => $type,
+                            'unit' =>  $unit,
+                            'value' => $value,
+                            'field' => $field,
+                            'pic' => $pic,
                         ]);
                     } else {
                         ConditionRoadBridge::create([
-                            'condition' =>  $row[1],
-                            'type' =>  $row[2],
-                            'unit' =>  $row[3],
-                            'year' =>  $row[4],
-                            'value' => $row[5],
-                            'field' => $row[6],
-                            'pic' => $row[7],
+                            'condition' =>  $condition,
+                            'type' =>  $type,
+                            'unit' =>  $unit,
+                            'year' =>  $year,
+                            'value' => $value,
+                            'field' => $field,
+                            'pic' => $pic,
                         ]);
                     }
                 }

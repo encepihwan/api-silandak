@@ -21,50 +21,13 @@ class RoadActivitiesController extends Controller
     public function index(Request $request)
     {
         try {
-            // $data = $roadActivity = RoadActivities::filterByField('year', $request->year)->get();
+            
+            $data = RoadActivities::filterByField('year', (int)$request->year)->get();
 
-            // foreach ($roadActivity as $item) {
-            //     $item->count_pagu = ($item->auction_pagu ?? 0) + ($item->pl_pagu ?? 0);
-            //     $item->count_activity = ($item->auction_activity ?? 0) + ($item->pl_activity ?? 0);
-            // }
-            $year = $request->year;
-            $data = RoadActivities::raw(function ($collection) use ($year) {
-                return $collection->aggregate([
-                    [
-                        '$match' => [
-                            'year' => (int)$year,
-                        ]
-                    ],
-                    [
-                        '$group' => [
-                            '_id' => [
-                                'subactivity' => '$subactivity',
-                                'year' => '$year',
-                                'auction_pagu' => '$auction_pagu',
-                                'auction_activity' => '$auction_activity',
-                                'pl_pagu' => '$pl_pagu',
-                                'pl_activity' => '$pl_activity',
-
-                            ],
-                            'count_pagu' => ['$sum' => ['$add' => ['$auction_pagu', '$pl_pagu']]],
-                            'count_activity' => ['$sum' => ['$add' => ['$auction_activity', '$pl_activity']]],
-                        ],
-                    ],
-                    [
-                        '$project' => [
-                            '_id' => 0,
-                            'subactivity' => '$_id.subactivity',
-                            'year' => '$_id.year',
-                            'auction_pagu' => '$_id.auction_pagu',
-                            'auction_activity' => '$_id.auction_activity',
-                            'pl_pagu' => '$_id.pl_pagu',
-                            'pl_activity' => '$_id.pl_activity',
-                            'count_pagu' => '$count_pagu',
-                            'count_activity' => '$count_activity',
-                        ],
-                    ],
-                ]);
-            });
+            foreach ($data as $item) {
+                $item->count_pagu = ($item->auction_pagu ?? 0) + ($item->pl_pagu ?? 0);
+                $item->count_activity = ($item->auction_activity ?? 0) + ($item->pl_activity ?? 0);
+            }
 
             return Json::response($data);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
@@ -115,6 +78,13 @@ class RoadActivitiesController extends Controller
                         continue;
                     }
 
+                    $subactivity =  strval($row[1]);
+                    $auction_pagu =  intval($row[2]);
+                    $auction_activity =  intval($row[3]);
+                    $pl_pagu =  intval($row[4]);
+                    $pl_activity = intval($row[5]);
+                    $year = intval($row[6]);
+
                     if ($index === 1) continue;
 
                     $existingRecord = RoadActivities::where('subactivity', $row[1])->where('year', $row[6])->first();
@@ -122,19 +92,19 @@ class RoadActivitiesController extends Controller
                     if ($existingRecord) {
                         // Jika sudah ada, update data
                         $existingRecord->update([
-                            'auction_pagu' =>  $row[2],
-                            'auction_activity' =>  $row[3],
-                            'pl_pagu' =>  $row[4],
-                            'pl_activity' => $row[5],
+                            'auction_pagu' =>  $auction_pagu,
+                            'auction_activity' =>  $auction_activity,
+                            'pl_pagu' =>  $pl_pagu,
+                            'pl_activity' => $pl_activity,
                         ]);
                     } else {
                         RoadActivities::create([
-                            'subactivity' =>  $row[1],
-                            'auction_pagu' =>  $row[2],
-                            'auction_activity' =>  $row[3],
-                            'pl_pagu' =>  $row[4],
-                            'pl_activity' => $row[5],
-                            'year' => $row[6],
+                            'subactivity' =>  $subactivity,
+                            'auction_pagu' =>  $auction_pagu,
+                            'auction_activity' =>  $auction_activity,
+                            'pl_pagu' =>  $pl_pagu,
+                            'pl_activity' => $pl_activity,
+                            'year' => $year,
                         ]);
                     }
                 }

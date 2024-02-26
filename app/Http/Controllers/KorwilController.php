@@ -59,7 +59,7 @@ class KorwilController extends Controller
     public function index(Request $request)
     {
         try {
-            if (strtolower($request->filter) == "total") {
+            if (strtolower($request->area) == "total") {
                 $korwil = $this->resume($request);
 
                 // $roadActivity = RoadActivities::filterByField('year', $request->year)->get();
@@ -77,7 +77,7 @@ class KorwilController extends Controller
             } else {
                 $data = Korwil::filterByField('area', $request->area)
                     ->filterByField('month', $request->month)
-                    ->filterByField('area', $request->area)
+                    ->filterByField('year', $request->year)
                     ->get();
                 $totals = [
                     'total_package_before_refocusing' => 0,
@@ -126,13 +126,7 @@ class KorwilController extends Controller
     public function stackchart(Request $request)
     {
         try {
-            $filter = '';
-
-            if (strtolower($request->filter) == 'fisik') {
-                $filter = 'percentage_after_realized';
-            } else {
-                $filter = 'pagu_realiized';
-            }
+            $filter = strtolower($request->filter) == 'pencairan' ? 'pagu_realiized' : 'percentage_after_realized';
 
             $data = Korwil::where('month', '=', $request->month)
                 ->select('package', $filter)
@@ -178,12 +172,10 @@ class KorwilController extends Controller
                 return $item->$filter != 0;
             });
 
-            // dd($data);
             $merge = [
                 'series' => $filteredData->pluck($filter)->toArray(),
                 'package' => $filteredData->pluck('package')->toArray()
             ];
-
 
             return Json::response($merge);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
