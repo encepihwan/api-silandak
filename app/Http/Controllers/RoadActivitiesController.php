@@ -10,6 +10,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Helpers\MethodsHelpers;
 use Jenssegers\Mongodb\Query\Builder as MongoBuilder;
 use Carbon\Carbon;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class RoadActivitiesController extends Controller
 {
@@ -66,8 +67,13 @@ class RoadActivitiesController extends Controller
 
             // $file = $request->file('file');
             $path = $request->file('file')->getRealPath();
-            $data = Excel::toArray([], $path)[0];
+            $path = $request->file('file')->getRealPath();
+            $reader = IOFactory::createReader('Xlsx');
+            // $data = Excel::toArray([], $path)[0];
+            $spreadsheet = $reader->load($path);
 
+            // Mendapatkan data dari lembar pertama (indeks 0)
+            $data = $spreadsheet->getActiveSheet()->toArray();
             if (!empty($data)) {
 
                 $headerSkipped = false;
