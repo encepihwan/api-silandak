@@ -44,7 +44,7 @@ Route::group([
     });
     
     $router->group(['prefix' => 'condition'], function ($router){
-        Route::post('/', [ConditionRoadBridgeController::class, 'index']);
+        Route::get('/', [ConditionRoadBridgeController::class, 'index']);
         Route::post('/import', [ConditionRoadBridgeController::class, 'import']);
     });
     
