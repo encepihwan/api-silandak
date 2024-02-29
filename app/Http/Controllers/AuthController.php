@@ -45,6 +45,7 @@ class AuthController extends Controller
             $user->password = bcrypt($request->password);
             $user->status = 'active';
             $user->created_at = now();
+            $user->role = $request->role;
             $user->updated_at = '';
             $user->save();
 
