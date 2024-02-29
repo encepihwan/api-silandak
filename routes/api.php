@@ -34,24 +34,25 @@ Route::group([
         Route::post('/register', [AuthController::class, 'register']);
         Route::post('/login', [AuthController::class, 'login']);
     });
-    $router->group(['prefix' => 'korwil'], function ($router){
-        Route::post('/', [KorwilController::class, 'index']);
-        Route::get('/resume', [KorwilController::class, 'resume']);
-        Route::post('/create', [KorwilController::class, 'store']);
-        Route::post('/import', [KorwilController::class, 'import']);
-        Route::post('/stack-chart', [KorwilController::class, 'stackchart']);
-        Route::post('/pie-chart', [KorwilController::class, 'piechart']);
-    });
-    
-    $router->group(['prefix' => 'condition'], function ($router){
-        Route::get('/', [ConditionRoadBridgeController::class, 'index']);
-        Route::post('/import', [ConditionRoadBridgeController::class, 'import']);
-    });
-    
-    $router->group(['prefix' => 'activity'], function ($router){
-        Route::post('/', [RoadActivitiesController::class, 'index']);
-        Route::post('/import', [RoadActivitiesController::class, 'import']);
-    });
+});
+
+Route::prefix('korwil')->middleware('auth:api')->group(function ($router){
+    Route::post('/', [KorwilController::class, 'index']);
+    Route::get('/resume', [KorwilController::class, 'resume']);
+    Route::post('/create', [KorwilController::class, 'store']);
+    Route::post('/import', [KorwilController::class, 'import']);
+    Route::post('/stack-chart', [KorwilController::class, 'stackchart']);
+    Route::post('/pie-chart', [KorwilController::class, 'piechart']);
+});
+
+Route::prefix('condition')->middleware('auth:api')->group(function ($router){
+    Route::get('/', [ConditionRoadBridgeController::class, 'index']);
+    Route::post('/import', [ConditionRoadBridgeController::class, 'import']);
+});
+
+Route::prefix('activity')->middleware('auth:api')->group(function ($router){
+    Route::post('/', [RoadActivitiesController::class, 'index']);
+    Route::post('/import', [RoadActivitiesController::class, 'import']);
 });
 
 

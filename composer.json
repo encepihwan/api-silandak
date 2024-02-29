@@ -8,6 +8,7 @@
         "php": "^8.0",
         "fruitcake/laravel-cors": "^2.0.5",
         "google/apiclient": "2.15.0",
+        "google/cloud-recaptcha-enterprise": "^1.9",
         "guzzlehttp/guzzle": "^7.8",
         "jenssegers/mongodb": "*",
         "laravel/framework": "^9.0",
