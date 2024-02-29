@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ConditionRoadBridgeController;
+use App\Http\Controllers\DownloadController;
 use App\Http\Controllers\KorwilController;
 use App\Http\Controllers\RoadActivitiesController;
 
@@ -53,6 +54,10 @@ Route::prefix('condition')->middleware('auth:api')->group(function ($router){
 Route::prefix('activity')->middleware('auth:api')->group(function ($router){
     Route::post('/', [RoadActivitiesController::class, 'index']);
     Route::post('/import', [RoadActivitiesController::class, 'import']);
+});
+
+Route::prefix('download')->middleware('auth:api')->group(function ($router){
+    Route::get('/{filename}', [DownloadController::class, 'download']);
 });
 
 
