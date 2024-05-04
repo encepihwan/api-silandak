@@ -65,14 +65,27 @@ class KorwilController extends Controller
                 // $roadActivity = RoadActivities::filterByField('year', $request->year)->get();
                 $roadActivity = RoadActivities::filterByField('year', (int)$request->year)->get();
 
-                foreach ($roadActivity as $item) {
-                    foreach ($korwil as $row) {
+                // Periksa jika jumlah korwil dan roadActivities sama
+                if (count($korwil) === count($roadActivity)) {
+                    // Iterasi setiap RoadActivity dengan index yang cocok
+                    foreach ($roadActivity as $index => $item) {
+                        // Ambil korwil yang sesuai berdasarkan index
+                        $matchedKorwil = $korwil[$index];
+
+                        // Hitung count_pagu dan count_activity
                         $item->count_pagu = ($item->auction_pagu ?? 0) + ($item->pl_pagu ?? 0);
                         $item->count_activity = ($item->auction_activity ?? 0) + ($item->pl_activity ?? 0);
-                        $item->korwil = $row;
+
+                        // Tambahkan korwil yang cocok ke dalam RoadActivity
+                        $item->korwil = $matchedKorwil;
+                    }
+                } else {
+                    foreach ($roadActivity as $item) {
+                        $item->korwil = null; 
                     }
                 }
 
+                // dd($roadActivity);
                 return Json::response($roadActivity);
             } else {
                 $data = Korwil::filterByField('area', $request->area)
@@ -168,7 +181,7 @@ class KorwilController extends Controller
 
             $data = $this->resume($request);
 
-            $filteredData = $data->filter(function($item) use ($filter) {
+            $filteredData = $data->filter(function ($item) use ($filter) {
                 return $item->$filter != 0;
             });
 
@@ -187,6 +200,44 @@ class KorwilController extends Controller
         }
     }
 
+    public function sumary(Request $request)
+    {
+        try {
+            // percentage
+            $korwil = $this->resume($request);
+            $total_physique_percen = 0;
+            $total_package_after_refocusing = 0;
+            foreach ($korwil as $item) {
+                $total_physique_percen += $item->physique_percen;
+                $total_package_after_refocusing += $item->package_after_refocusing;
+            }
+
+            // dd("p:".$total_physique_percen, "r:".$total_package_after_refocusing);
+            $total_percentage_after_realized = round($total_physique_percen / $total_package_after_refocusing * 100) ;
+
+            $roadActivity = RoadActivities::filterByField('year', (int)$request->year)->get();
+            $lelang = 0;
+            $pengadaan = 0;
+            foreach( $roadActivity as $activity ) {
+                $lelang += $activity->auction_activity;
+                $pengadaan += $activity->pl_activity;
+            }
+
+            $data = [
+                'lelang' => $lelang,
+                'pengadaan' => $pengadaan,
+                'percentage' => $total_percentage_after_realized,
+            ];
+
+            return Json::response($data);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return Json::exception('Error Model ' . $debug = env('APP_DEBUG', false) == true ? $e : '');
+        } catch (\Illuminate\Database\QueryException $e) {
+            return Json::exception('Error Query ' . $debug = env('APP_DEBUG', false) == true ? $e : '');
+        } catch (\ErrorException $e) {
+            return Json::exception('Error Exception ' . $debug = env('APP_DEBUG', false) == true ? $e : '');
+        }
+    }
     public function resume(Request $request)
     {
         try {
@@ -231,7 +282,7 @@ class KorwilController extends Controller
                             'physique_percen' => ['$sum' => '$physique_percen'],
                             'pho' => ['$sum' => '$pho'],
                             'ba' => ['$sum' => '$ba'],
-                            'percentage_after_realized' => ['$sum' => '$percentage_after_realized'],
+                            'percentage_after_realized' => ['$sum' => '$physique_percen'],
                             'pagu_realiized' => ['$sum' => '$pagu_realiized'],
                             'number_of_refocusing_package' => ['$sum' => '$number_of_refocusing_package'],
                             'pagu_refocusing' => ['$sum' => '$pagu_refocusing'],
@@ -245,11 +296,17 @@ class KorwilController extends Controller
                             'package_before_refocusing' => '$package_before_refocusing',
                             'package_after_refocusing' => '$package_after_refocusing',
                             'pagu_after_refocusing' => '$pagu_after_refocusing',
+                            'physique_percen' => '$physique_percen',
                             'fe' => '$fe',
                             'contract' => '$contract',
                             'pho' => '$pho',
                             'ba' => '$ba',
-                            'percentage_after_realized' => '$percentage_after_realized',
+                            'percentage_after_realized' => [
+                                '$multiply' => [
+                                    ['$divide' => ['$physique_percen', '$package_after_refocusing']],
+                                    100
+                                ]
+                            ],
                             'pagu_realiized' => '$pagu_realiized',
                             'number_of_refocusing_package' => '$number_of_refocusing_package',
                             'pagu_refocusing' => '$pagu_refocusing',

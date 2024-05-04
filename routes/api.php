@@ -7,6 +7,7 @@ use App\Http\Controllers\ConditionRoadBridgeController;
 use App\Http\Controllers\DownloadController;
 use App\Http\Controllers\KorwilController;
 use App\Http\Controllers\RoadActivitiesController;
+use App\Models\Korwil;
 
 /*
 |--------------------------------------------------------------------------
@@ -34,12 +35,14 @@ Route::group([
     $router->group(['prefix' => 'auth'], function ($router){
         Route::post('/register', [AuthController::class, 'register']);
         Route::post('/login', [AuthController::class, 'login']);
+        Route::post('/logout', [AuthController::class, 'logout']);
     });
 });
 
 Route::prefix('korwil')->middleware('auth:api')->group(function ($router){
     Route::post('/', [KorwilController::class, 'index']);
     Route::get('/resume', [KorwilController::class, 'resume']);
+    Route::get('/sumary', [KorwilController::class, 'sumary']);
     Route::post('/create', [KorwilController::class, 'store']);
     Route::post('/import', [KorwilController::class, 'import']);
     Route::post('/stack-chart', [KorwilController::class, 'stackchart']);
@@ -56,8 +59,13 @@ Route::prefix('activity')->middleware('auth:api')->group(function ($router){
     Route::post('/import', [RoadActivitiesController::class, 'import']);
 });
 
-Route::prefix('download')->middleware('auth:api')->group(function ($router){
-    Route::get('/{filename}', [DownloadController::class, 'download']);
+Route::delete('/korwil/delete-all', function () {
+    Korwil::truncate(); // Menghapus semua data dari tabel korwil
+    return response()->json(['message' => 'Semua data korwil berhasil dihapus'], 200);
 });
+
+// Route::prefix('download')->middleware('auth:api')->group(function ($router){
+    Route::get('/download/{filename}', [DownloadController::class, 'download']);
+// });
 
 
