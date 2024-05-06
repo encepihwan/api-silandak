@@ -80,8 +80,12 @@ class RoadActivitiesController extends Controller
 
                 foreach ($data as $index => $row) {
                     if (!$headerSkipped) {
-                        $headerSkipped = true;
-                        continue;
+                        if ($index === 0 && isset($row[0]) && isset($row[0]) && trim($row[0]) === "KEGIATAN BIDANG JALAN (FISIK DAN JASA KONSULTANSI TANPA BIAYA LAIN-LAIN)") {
+                            $headerSkipped = true;
+                            continue; // Skip the first header row
+                        } else {
+                            return Json::exception('Kesalah Input Format Excel');
+                        }
                     }
 
                     $subactivity =  strval($row[1]);
@@ -92,6 +96,7 @@ class RoadActivitiesController extends Controller
                     $year = intval($row[6]);
 
                     if ($index === 1) continue;
+                    if ($index === 2) continue;
 
                     $existingRecord = RoadActivities::where('subactivity', $row[1])->where('year', $row[6])->first();
 

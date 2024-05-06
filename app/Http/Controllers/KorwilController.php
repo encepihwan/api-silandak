@@ -350,11 +350,17 @@ class KorwilController extends Controller
 
                 $headerSkipped = false;
 
-                foreach ($data as $row) {
+                foreach ($data as $index => $row) {
                     if (!$headerSkipped) {
-                        $headerSkipped = true;
-                        continue;
+                        if ($index === 0 && isset($row[0]) && isset($row[0]) && trim($row[0]) === "PROGRES KEGIATAN PROGRAM PENYELENGGARAAN JALAN - BIDANG JALAN") {
+                            $headerSkipped = true;
+                            continue; // Skip the first header row
+                        } else {
+                            return Json::exception('Kesalah Input Format Excel');
+                        }
                     }
+
+                    if ($index === 1) continue;
 
                     $month = strval($row[17]);
                     $type = strval($row[16]);

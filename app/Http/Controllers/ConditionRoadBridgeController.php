@@ -112,10 +112,9 @@ class ConditionRoadBridgeController extends Controller
     {
         try {
 
-            // $file = $request->file('file');
+            
             $path = $request->file('file')->getRealPath();
             $reader = IOFactory::createReader('Xlsx');
-            // $data = Excel::toArray([], $path)[0];
             $spreadsheet = $reader->load($path);
 
             // Mendapatkan data dari lembar pertama (indeks 0)
@@ -125,12 +124,16 @@ class ConditionRoadBridgeController extends Controller
 
                 $headerSkipped = false;
 
-                foreach ($data as $row) {
+                foreach ($data as $index => $row) {
                     if (!$headerSkipped) {
-                        $headerSkipped = true;
-                        continue;
+                        if ($index === 0 && isset($row[0]) && isset($row[0]) && trim($row[0]) === "DATA KONDISI JALAN & JEMBATAN") {
+                            $headerSkipped = true;
+                            continue; // Skip the first header row
+                        } else {
+                            return Json::exception('Kesalah Input Format Excel');
+                        }
                     }
-
+                    if ($index === 1) continue; //skip
                     $condition = strval($row[1]);
                     $type = strval($row[2]);
                     $unit = strval($row[3]);
