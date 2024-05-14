@@ -15,6 +15,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use Exception;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
+
 class KorwilController extends Controller
 {
     /**
@@ -81,17 +82,30 @@ class KorwilController extends Controller
                     }
                 } else {
                     foreach ($roadActivity as $item) {
-                        $item->korwil = null; 
+                        $item->korwil = null;
                     }
                 }
 
                 // dd($roadActivity);
                 return Json::response($roadActivity);
             } else {
-                $data = Korwil::filterByField('area', $request->area)
-                    ->filterByField('month', $request->month)
-                    ->filterByField('year', $request->year)
-                    ->get();
+                $year = Carbon::now()->year();
+                $month = Carbon::now()->format('F');
+                // dd($month);
+
+                $data = Korwil::when($request->area, function($query) use ($request) {
+                    return $query->where('area', $request->area);
+                })->when($request->area, function($query) use ($month) {
+                    return $query->where('month', $month);
+                })->when($request->year, function ($query) use ($year) {
+                    return $query->where('year', (int) $year);
+                })->get();
+
+                // dd($data);
+                // Korwil::filterByField('area', $request->area)
+                //     ->filterByField('month', $request->month)
+                //     ->filterByField('year', $request->year)
+                //     ->get();
                 $totals = [
                     'total_package_before_refocusing' => 0,
                     'total_package_after_refocusing' => 0,
@@ -139,7 +153,7 @@ class KorwilController extends Controller
     public function stackchart(Request $request)
     {
         try {
-            $filter = strtolower($request->filter) == 'pencairan' ? 'pagu_realiized' : 'percentage_after_realized';
+            $filter = strtolower($request->filter) == 'fisik' ? 'percentage_after_realized' : 'pagu_realiized';
 
             $data = Korwil::where('month', '=', $request->month)
                 ->select('package', $filter)
@@ -213,12 +227,12 @@ class KorwilController extends Controller
             }
 
             // dd("p:".$total_physique_percen, "r:".$total_package_after_refocusing);
-            $total_percentage_after_realized = round($total_physique_percen / $total_package_after_refocusing * 100) ;
+            $total_percentage_after_realized = round($total_physique_percen / $total_package_after_refocusing * 100);
 
             $roadActivity = RoadActivities::filterByField('year', (int)$request->year)->get();
             $lelang = 0;
             $pengadaan = 0;
-            foreach( $roadActivity as $activity ) {
+            foreach ($roadActivity as $activity) {
                 $lelang += $activity->auction_activity;
                 $pengadaan += $activity->pl_activity;
             }
