@@ -138,7 +138,8 @@ class ConditionRoadBridgeController extends Controller
                     $type = strval($row[2]);
                     $unit = strval($row[3]);
                     $year = intval($row[4]);
-                    $value = intval($row[5]);
+                    $value = floatval($row[5]);
+                    $value = number_format($value, 2, ',', '');
                     $field = strval($row[6]);
                     $pic = strval($row[7]);
 

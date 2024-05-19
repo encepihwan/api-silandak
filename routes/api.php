@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\ConditionRoadBridge;
+use App\Models\RoadActivities;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
@@ -61,6 +63,16 @@ Route::prefix('activity')->middleware('auth:api')->group(function ($router){
 
 Route::delete('/korwil/delete-all', function () {
     Korwil::truncate(); // Menghapus semua data dari tabel korwil
+    return response()->json(['message' => 'Semua data korwil berhasil dihapus'], 200);
+});
+
+Route::delete('/condition/delete-all', function () {
+    ConditionRoadBridge::truncate(); // Menghapus semua data dari tabel 
+    return response()->json(['message' => 'Semua data korwil berhasil dihapus'], 200);
+});
+
+Route::delete('/road-activities/delete-all', function () {
+    RoadActivities::truncate(); // Menghapus semua data dari tabel 
     return response()->json(['message' => 'Semua data korwil berhasil dihapus'], 200);
 });
 

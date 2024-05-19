@@ -67,7 +67,7 @@ class RoadActivitiesController extends Controller
 
             // $file = $request->file('file');
             $path = $request->file('file')->getRealPath();
-            $path = $request->file('file')->getRealPath();
+            // $path = $request->file('file')->getRealPath();
             $reader = IOFactory::createReader('Xlsx');
             // $data = Excel::toArray([], $path)[0];
             $spreadsheet = $reader->load($path);
@@ -98,7 +98,7 @@ class RoadActivitiesController extends Controller
                     if ($index === 1) continue;
                     if ($index === 2) continue;
 
-                    $existingRecord = RoadActivities::where('subactivity', $row[1])->where('year', $row[6])->first();
+                    $existingRecord = RoadActivities::where('subactivity',$subactivity)->where('year', $year)->first();
 
                     if ($existingRecord) {
                         // Jika sudah ada, update data
