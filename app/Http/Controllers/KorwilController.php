@@ -66,19 +66,42 @@ class KorwilController extends Controller
                 // $roadActivity = RoadActivities::filterByField('year', $request->year)->get();
                 $roadActivity = RoadActivities::filterByField('year', (int)$request->year)->get();
 
+                $mapping = [
+                    'Pembangunan Jalan' => 'Penyusunan Rencana, Kebijakan, Strategi dan Teknis Pengembangan Jaringan Jalan serta Perencanaan Teknis Penyelenggaraan Jalan dan Jembatan',
+                    'Rekonstruksi Jalan' => 'Pengelolaan Leger Jalan',
+                    'Pelebaran Jalan' => 'Survey Kondisi Jalan / Jembatan',
+                    'Pembangunan Jembatan' => 'Rehabilitasi Jalan',
+                    'Rehabilitasi Jembatan' => 'Pembangunan Jalan',
+                    'Pembangunan Jalan (Lelang)' => 'Rekonstruksi Jalan',
+                    'Rekonstruksi Jalan (Lelang)' => 'Pelebaran Jalan Menuju Standar',
+                    'Pelebaran Jalan (Lelang)' => 'Rehabilitasi Jembatan',
+                    'Pembangunan Jembatan (Lelang)' => 'Pembangunan Jembatan',
+                    'Rehabilitasi Jembatan (Lelang)' => 'Pengawasan Penyelenggaraan Jalan Kewenangan Kabupaten/Kota dan Desa'
+                ];
+
+                $mergedData = [];
                 // Periksa jika jumlah korwil dan roadActivities sama
                 if (count($korwil) === count($roadActivity)) {
                     // Iterasi setiap RoadActivity dengan index yang cocok
-                    foreach ($roadActivity as $index => $item) {
-                        // Ambil korwil yang sesuai berdasarkan index
-                        $matchedKorwil = $korwil[$index];
+                    // Buat array untuk menampung hasil penggabungan
+                    
+                    foreach ($roadActivity as $item) {
+                        // Cari package yang sesuai berdasarkan subactivity
+                        $korwilItem = $korwil->first(function ($korwil) use ($item, $mapping) {
+                            return isset($mapping[$korwil->package]) && $mapping[$korwil->package] === $item->subactivity;
+                        });
 
                         // Hitung count_pagu dan count_activity
                         $item->count_pagu = ($item->auction_pagu ?? 0) + ($item->pl_pagu ?? 0);
                         $item->count_activity = ($item->auction_activity ?? 0) + ($item->pl_activity ?? 0);
 
-                        // Tambahkan korwil yang cocok ke dalam RoadActivity
-                        $item->korwil = $matchedKorwil;
+                        // Tambahkan korwil yang cocok ke dalam RoadActivity jika ditemukan
+                        if ($korwilItem) {
+                            $item->korwil = $korwilItem;
+                        }
+
+                        // Tambahkan item ke dalam array hasil
+                        $mergedData[] = $item;
                     }
                 } else {
                     foreach ($roadActivity as $item) {
@@ -87,15 +110,15 @@ class KorwilController extends Controller
                 }
 
                 // dd($roadActivity);
-                return Json::response($roadActivity);
+                return Json::response($mergedData);
             } else {
                 $year = Carbon::now()->year();
                 $month = Carbon::now()->format('F');
                 // dd($month);
 
-                $data = Korwil::when($request->area, function($query) use ($request) {
+                $data = Korwil::when($request->area, function ($query) use ($request) {
                     return $query->where('area', $request->area);
-                })->when($request->area, function($query) use ($month) {
+                })->when($request->area, function ($query) use ($month) {
                     return $query->where('month', $month);
                 })->when($request->year, function ($query) use ($year) {
                     return $query->where('year', (int) $year);
@@ -316,9 +339,15 @@ class KorwilController extends Controller
                             'pho' => '$pho',
                             'ba' => '$ba',
                             'percentage_after_realized' => [
-                                '$multiply' => [
-                                    ['$divide' => ['$physique_percen', '$package_after_refocusing']],
-                                    100
+                                '$cond' => [
+                                    'if' => ['$eq' => ['$package_after_refocusing', 0]],
+                                    'then' => 0, // atau nilai lain yang sesuai
+                                    'else' => [
+                                        '$multiply' => [
+                                            ['$divide' => ['$physique_percen', '$package_after_refocusing']],
+                                            100
+                                        ]
+                                    ]
                                 ]
                             ],
                             'pagu_realiized' => '$pagu_realiized',
